@@ -266,6 +266,12 @@ button {
   background: rgba(0, 171, 255, 0.08);
 }
 
+.search-feedback {
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--gray-700);
+}
+
 .search-result__copy {
   flex: 1;
 }
@@ -481,6 +487,23 @@ button {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+.page-tags {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tag-pill {
+  background: rgba(0, 119, 179, 0.12);
+  border: 1px solid rgba(0, 119, 179, 0.2);
+  color: var(--gray-900);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.2rem 0.75rem;
 }
 
 .meta-item {

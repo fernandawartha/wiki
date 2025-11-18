@@ -1,4 +1,4 @@
-import MDEditor from "@uiw/react-md-editor";
+﻿import MDEditor from "@uiw/react-md-editor";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Modal from "./Modal";
 import { api } from "../services/api";
@@ -26,6 +26,12 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)+/g, "");
 
+const parseTags = (value: string) =>
+  value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
 const CreatePageModal = ({
   open,
   onClose,
@@ -36,8 +42,9 @@ const CreatePageModal = ({
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
+  const [tagsInput, setTagsInput] = useState("");
   const [folderId, setFolderId] = useState(defaultFolderId ?? "");
-  const [content, setContent] = useState<string>("# Novo conte\u00c3\u00bado\n");
+  const [content, setContent] = useState<string>("# Novo conteúdo\n");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -55,8 +62,9 @@ const CreatePageModal = ({
   const resetAndClose = () => {
     setTitle("");
     setSummary("");
+    setTagsInput("");
     setFolderId(defaultFolderId ?? "");
-    setContent("# Novo conte\u00c3\u00bado\n");
+    setContent("# Novo conteúdo\n");
     onClose();
   };
 
@@ -70,7 +78,8 @@ const CreatePageModal = ({
         folderId: folderId || null,
         content,
         bitbucketPath: pathSuggestion,
-        status: "DRAFT"
+        status: "DRAFT",
+        tags: parseTags(tagsInput)
       });
       onCreated();
       resetAndClose();
@@ -81,15 +90,26 @@ const CreatePageModal = ({
   };
 
   return (
-    <Modal open={open} title="Nova p\u00c3\u00a1gina" onClose={resetAndClose}>
+    <Modal open={open} title="Nova página" onClose={resetAndClose}>
       <form className="form-grid" onSubmit={handleSubmit} data-color-mode="light">
         <label>
-          T\u00c3\u00adtulo
+          Título
           <input value={title} onChange={(e) => setTitle(e.target.value)} required />
         </label>
         <label>
           Resumo
           <input value={summary} onChange={(e) => setSummary(e.target.value)} />
+        </label>
+        <label>
+          Tags
+          <input
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="separe com vírgulas (ex.: onboarding, financeiro, produto)"
+          />
+          <small className="muted">
+            Use palavras-chave para facilitar a busca e correlacionar conteúdos.
+          </small>
         </label>
         <label>
           Pasta
@@ -102,12 +122,8 @@ const CreatePageModal = ({
             ))}
           </select>
         </label>
-        <label>
-          Caminho no Bitbucket
-          <input value={pathSuggestion} readOnly />
-        </label>
         <div className="md-editor">
-          <span>Conte\u00c3\u00bado Markdown</span>
+          <span>Conteúdo Markdown</span>
           <MDEditor value={content} onChange={(value) => setContent(value ?? "")} height={300} />
         </div>
         <div className="modal-actions">
@@ -115,7 +131,7 @@ const CreatePageModal = ({
             Cancelar
           </button>
           <button type="submit" disabled={loading || !title.trim()}>
-            {loading ? "Criando..." : "Criar p\u00c3\u00a1gina"}
+            {loading ? "Criando..." : "Criar página"}
           </button>
         </div>
       </form>

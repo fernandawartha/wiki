@@ -22,6 +22,7 @@ export interface PageResponse {
   folderId: string;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
   summary?: string;
+  tags?: string[];
   bitbucketPath: string;
   content: string;
   createdAt?: string;

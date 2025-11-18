@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
@@ -7,8 +7,14 @@ import Sidebar from "./Sidebar";
 import CreateFolderModal from "./CreateFolderModal";
 import CreatePageModal from "./CreatePageModal";
 
+interface NavigationGuard {
+  shouldBlock: () => boolean;
+  confirm: () => Promise<boolean>;
+}
+
 export interface LayoutOutletContext {
   refreshTree: () => void;
+  registerNavigationGuard?: (guard: NavigationGuard | null) => void;
 }
 
 const statusLabels: Record<SearchResult["status"], string> = {
@@ -23,6 +29,10 @@ const Layout = () => {
   const [loadingTree, setLoadingTree] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const navigationGuardRef = useRef<NavigationGuard | null>(null);
   const [syncedAt, setSyncedAt] = useState<Date | null>(null);
   const navigate = useNavigate();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -45,21 +55,95 @@ const Layout = () => {
     loadTree();
   }, [loadTree]);
 
-  const handleSearchChange = async (value: string) => {
-    setSearchTerm(value);
-    if (value.length < 2) {
+  useEffect(() => {
+    const query = searchTerm.trim();
+    if (!query) {
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort();
+        searchAbortRef.current = null;
+      }
       setSearchResults([]);
+      setSearchLoading(false);
+      setSearchMessage(null);
       return;
     }
-    const response = await api.get<SearchResult[]>("/search", {
-      params: { q: value }
-    });
-    setSearchResults(response.data);
+    if (query.length < 2) {
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort();
+        searchAbortRef.current = null;
+      }
+      setSearchResults([]);
+      setSearchLoading(false);
+      setSearchMessage("Digite ao menos 2 caracteres para buscar.");
+      return;
+    }
+
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+    setSearchLoading(true);
+    setSearchMessage(null);
+
+    api
+      .get<SearchResult[]>("/search", {
+        params: { q: query },
+        signal: controller.signal
+      })
+      .then((response) => {
+        setSearchResults(response.data);
+        if (!response.data.length) {
+          setSearchMessage("Nenhum conteúdo encontrado.");
+        }
+      })
+      .catch((error) => {
+        if ((error as any)?.code === "ERR_CANCELED" || (error as Error).name === "CanceledError") {
+          return;
+        }
+        setSearchMessage("Não foi possível buscar no momento.");
+      })
+      .finally(() => {
+        if (searchAbortRef.current === controller) {
+          setSearchLoading(false);
+          searchAbortRef.current = null;
+        }
+      });
+
+    return () => controller.abort();
+  }, [searchTerm]);
+
+  const registerNavigationGuard = useCallback((guard: NavigationGuard | null) => {
+    navigationGuardRef.current = guard;
+  }, []);
+
+  const runWithNavigationGuard = useCallback(
+    (next: () => void) => {
+      const guard = navigationGuardRef.current;
+      if (guard && guard.shouldBlock()) {
+        guard
+          .confirm()
+          .then((proceed) => {
+            if (proceed) {
+              next();
+            }
+          })
+          .catch(() => undefined);
+      } else {
+        next();
+      }
+    },
+    []
+  );
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
   };
 
   const handleSelectPage = (pageId: string) => {
-    setSelectedNodeId(pageId);
-    navigate(`/pages/${pageId}`);
+    runWithNavigationGuard(() => {
+      setSelectedNodeId(pageId);
+      setSearchResults([]);
+      setSearchTerm("");
+      navigate(`/pages/${pageId}`);
+    });
   };
 
   const handleSelectFolder = (folderId: string | null) => {
@@ -97,11 +181,13 @@ const Layout = () => {
     ? "Organize e publique playbooks com consistência visual e clareza."
     : "Consuma os conteúdos oficiais e conheça os processos críticos da Handit.";
 
+  const shouldShowSearchPanel = searchLoading || searchResults.length > 0 || !!searchMessage;
+
   return (
     <div className="layout">
       <header className="header header--light">
         <div className="header__primary">
-          <button type="button" className="logo" onClick={() => navigate("/")}>
+          <button type="button" className="logo" onClick={() => runWithNavigationGuard(() => navigate("/"))}>
             <div className="logo-mark">H</div>
             <div className="logo-copy">
               <span className="eyebrow">Handit Wiki</span>
@@ -135,18 +221,16 @@ const Layout = () => {
                 placeholder="Busque por páginas, squads ou palavras-chave"
               />
             </div>
-            {searchResults.length > 0 && (
+            {shouldShowSearchPanel && (
               <div className="search-results" role="listbox">
+                {searchLoading && <div className="search-feedback">Buscando...</div>}
+                {searchMessage && <div className="search-feedback">{searchMessage}</div>}
                 {searchResults.map((result) => (
                   <button
                     type="button"
                     className="search-result"
                     key={result.id}
-                    onClick={() => {
-                      handleSelectPage(result.id);
-                      setSearchResults([]);
-                      setSearchTerm("");
-                    }}
+                    onClick={() => handleSelectPage(result.id)}
                   >
                     <div className="search-result__copy">
                       <strong>{result.title}</strong>
@@ -184,7 +268,7 @@ const Layout = () => {
           selectedNodeId={selectedNodeId}
         />
         <main className="main-content">
-          <Outlet context={{ refreshTree: loadTree }} />
+          <Outlet context={{ refreshTree: loadTree, registerNavigationGuard }} />
         </main>
       </div>
       <CreateFolderModal

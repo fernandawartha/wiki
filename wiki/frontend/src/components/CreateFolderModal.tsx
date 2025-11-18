@@ -64,7 +64,7 @@ const CreateFolderModal = ({
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
         <label>
-          Descri\u00c3\u00a7\u00c3\u00a3o
+          Descrição
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
         </label>
         <label>

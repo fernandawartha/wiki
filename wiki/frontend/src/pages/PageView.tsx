@@ -46,20 +46,29 @@ const PageView = () => {
   }, [page]);
 
   if (loading) {
-    return <p className="muted">Carregando p\u00e1gina...</p>;
+    return <p className="muted">Carregando página...</p>;
   }
 
   if (!page) {
-    return <p className="muted">P\u00e1gina n\u00e3o encontrada</p>;
+    return <p className="muted">Página não encontrada</p>;
   }
 
   return (
     <div className="page-view">
       <header className="page-view__header">
         <div>
-          <p className="eyebrow">P\u00e1gina</p>
+          <p className="eyebrow">Página</p>
           <h1>{page.title}</h1>
-          <p className="page-summary">{page.summary || "Este conte\u00fado ainda n\u00e3o possui um resumo."}</p>
+          <p className="page-summary">{page.summary || "Este conteúdo ainda não possui um resumo."}</p>
+          {page.tags?.length ? (
+            <div className="page-tags">
+              {page.tags.map((tag, index) => (
+                <span key={`${tag}-${index}`} className="tag-pill">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="page-meta">
             <span className={`status-badge status-${page.status.toLowerCase()}`}>
               {statusLabels[page.status]}
@@ -74,7 +83,7 @@ const PageView = () => {
             className="btn btn-primary"
             onClick={() => navigate(`/pages/${page.id}/edit`)}
           >
-            Editar p\u00e1gina
+            Editar página
           </button>
         </div>
       </header>
