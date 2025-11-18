@@ -1,0 +1,23 @@
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/handitwiki}
+  application:
+    name: handit-wiki
+  jackson:
+    default-property-inclusion: non_null
+bitbucket:
+  base-url: ${BITBUCKET_BASE_URL:https://api.bitbucket.org/2.0}
+  workspace: ${BITBUCKET_WORKSPACE:workspace}
+  repo-slug: ${BITBUCKET_REPO:handit-wiki-content}
+  branch: ${BITBUCKET_BRANCH:main}
+  auth-token: ${BITBUCKET_TOKEN:change-me}
+  local-path: ${BITBUCKET_LOCAL_PATH:./bitbucket-local}
+security:
+  jwt:
+    secret: ${JWT_SECRET:0123456789ABCDEF0123456789ABCDEF}
+    expiration-hours: ${JWT_EXPIRATION_HOURS:12}
+  super-admins:
+    - ${SUPER_ADMIN_ID:fernanda.wartha}
+server:
+  port: ${PORT:5174}
