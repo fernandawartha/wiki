@@ -12,11 +12,15 @@ services:
       - mongo
     environment:
       MONGODB_URI: mongodb://mongo:27017/handitwiki
-      BITBUCKET_BASE_URL: https://api.bitbucket.org/2.0
+      BITBUCKET_BASE_URL: ${BITBUCKET_BASE_URL:https://api.bitbucket.org/2.0}
+      GIT_PROVIDER: ${GIT_PROVIDER:-bitbucket}
       BITBUCKET_WORKSPACE: ${BITBUCKET_WORKSPACE}
       BITBUCKET_REPO: ${BITBUCKET_REPO}
       BITBUCKET_BRANCH: ${BITBUCKET_BRANCH:-main}
       BITBUCKET_TOKEN: ${BITBUCKET_TOKEN}
+      REPOSITORY_RAW_BASE_URL: ${REPOSITORY_RAW_BASE_URL:-}
+      GIT_COMMITTER_NAME: ${GIT_COMMITTER_NAME:-Handit Wiki}
+      GIT_COMMITTER_EMAIL: ${GIT_COMMITTER_EMAIL:-handit-wiki@local}
       JWT_SECRET: ${JWT_SECRET:-change-me}
       PORT: 5174
     ports:

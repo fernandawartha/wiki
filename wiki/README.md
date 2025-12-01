@@ -23,12 +23,16 @@ docker-compose.yml     # Subida completa (Mongo, API, Web)
 | Nome | Descrição |
 | --- | --- |
 | `MONGODB_URI` | URI para o MongoDB. usado pelo backend. |
-| `BITBUCKET_BASE_URL` | Base da API (`https://api.bitbucket.org/2.0`). |
-| `BITBUCKET_WORKSPACE` | Workspace Bitbucket que hospeda o repositório de markdown. |
+| `GIT_PROVIDER` | `bitbucket` (padrão) ou `github`. Define qual API será usada para salvar os arquivos `.md`. |
+| `BITBUCKET_BASE_URL` | Base da API REST. Use `https://api.bitbucket.org/2.0` (Bitbucket) ou `https://api.github.com` (GitHub). |
+| `BITBUCKET_WORKSPACE` | Workspace (Bitbucket) ou owner/organização (GitHub) que hospeda o repositório. |
 | `BITBUCKET_REPO` | *slug* do repositório. |
 | `BITBUCKET_BRANCH` | Branch onde os arquivos `.md` são persistidos. |
-| `BITBUCKET_TOKEN` | Token de acesso (Bearer). |
+| `BITBUCKET_TOKEN` | Token de acesso (Bearer). Personal access token do Bitbucket ou GitHub. |
 | `BITBUCKET_LOCAL_PATH` | Pasta usada em modo mock quando o Bitbucket não está configurado (padrão `./bitbucket-local`). |
+| `REPOSITORY_RAW_BASE_URL` | Base opcional para gerar o link público dos uploads. Deixe em branco para usar `https://bitbucket.org` ou `https://raw.githubusercontent.com` automaticamente. |
+| `GIT_COMMITTER_NAME` | Nome utilizado nos commits automatizados (padrão `Handit Wiki`). |
+| `GIT_COMMITTER_EMAIL` | E-mail utilizado nos commits automatizados (padrão `handit-wiki@local`). |
 | `JWT_SECRET` | Segredo JWT. |
 | `SUPER_ADMIN_ID` | Usuário/ID com privilégios totais (padrão `fernanda.wartha`). |
 
@@ -53,7 +57,7 @@ npm run dev
 
 App React em `http://localhost:5173` (proxy para `/api`).
 
-- Use os botões "Nova Pasta" e "Nova Página" no topo da aplicação para criar estruturas hierárquicas diretamente pelo frontend. O editor embutido em Markdown sincroniza automaticamente cada página com o repositório configurado no Bitbucket ou, se as credenciais não estiverem configuradas, com o diretório local definido em `BITBUCKET_LOCAL_PATH`.
+- Use os botões "Nova Pasta" e "Nova Página" no topo da aplicação para criar estruturas hierárquicas diretamente pelo frontend. O editor embutido em Markdown sincroniza automaticamente cada página com o repositório Git configurado (Bitbucket ou GitHub) ou, se as credenciais não estiverem configuradas, com o diretório local definido em `BITBUCKET_LOCAL_PATH`.
 
 ### Docker Compose
 
@@ -72,11 +76,31 @@ cd backend
 mvn test
 ```
 
-## Fluxo Bitbucket
+## Fluxo Git (Bitbucket ou GitHub)
 
 1. Cada página possui o campo `bitbucketPath` apontando para o arquivo `.md` no repositório configurado.
-2. O `BitbucketService` faz `GET`/`POST` (multipart) na API do Bitbucket para ler/escrever.
+2. O `BitbucketService` faz `GET`/`POST` na API do provedor configurado:
+   - Bitbucket: requisições `multipart/form-data` para `/repositories/{workspace}/{repo}/src`.
+   - GitHub: requisições `PUT` para `/repos/{owner}/{repo}/contents/{path}` usando conteúdo em Base64.
 3. O histórico de versões (`pageHistory`) registra `commitHash`, autor e notas.
+
+### Como usar GitHub em desenvolvimento
+
+1. Crie (ou escolha) um repositório GitHub que receberá os arquivos `.md`.
+2. Gere um [personal access token](https://github.com/settings/tokens) com permissões de `repo` (ou use um token fine-grained equivalente).
+3. Exporte as variáveis antes de subir o backend (exemplo no macOS/Linux):
+   ```bash
+   export GIT_PROVIDER=github
+   export BITBUCKET_BASE_URL=https://api.github.com
+   export BITBUCKET_WORKSPACE=seu-usuario-ou-org
+   export BITBUCKET_REPO=nome-do-repo
+   export BITBUCKET_BRANCH=main
+   export BITBUCKET_TOKEN=ghp_xxx # token
+   export REPOSITORY_RAW_BASE_URL=https://raw.githubusercontent.com
+   export GIT_COMMITTER_NAME="Handit Wiki"
+   export GIT_COMMITTER_EMAIL=wiki@seusite.com
+   ```
+4. Inicie o backend normalmente (`mvn spring-boot:run`). A aplicação continuará gravando a estrutura no MongoDB, mas o conteúdo Markdown irá direto para o GitHub, simulando o comportamento futuro no Bitbucket.
 
 ## Permissões
 

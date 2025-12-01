@@ -8,11 +8,15 @@ spring:
     default-property-inclusion: non_null
 bitbucket:
   base-url: ${BITBUCKET_BASE_URL:https://api.bitbucket.org/2.0}
+  provider: ${GIT_PROVIDER:bitbucket}
   workspace: ${BITBUCKET_WORKSPACE:workspace}
   repo-slug: ${BITBUCKET_REPO:handit-wiki-content}
   branch: ${BITBUCKET_BRANCH:main}
   auth-token: ${BITBUCKET_TOKEN:change-me}
   local-path: ${BITBUCKET_LOCAL_PATH:./bitbucket-local}
+  raw-base-url: ${REPOSITORY_RAW_BASE_URL:}
+  committer-name: ${GIT_COMMITTER_NAME:Handit Wiki}
+  committer-email: ${GIT_COMMITTER_EMAIL:handit-wiki@local}
 security:
   jwt:
     secret: ${JWT_SECRET:0123456789ABCDEF0123456789ABCDEF}

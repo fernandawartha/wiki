@@ -31,8 +31,7 @@ public class UploadController {
         String filename = UUID.randomUUID() + "-" + file.getOriginalFilename();
         String path = "assets/" + filename;
         String commit = bitbucketService.saveBinaryFile(path, file.getBytes(), "chore: upload asset " + filename);
-        String url = String.format("https://bitbucket.org/%s/%s/raw/%s/%s",
-                properties.getWorkspace(), properties.getRepoSlug(), properties.getBranch(), path);
+        String url = properties.useMock() ? path : properties.buildRawFileUrl(path);
         return ResponseEntity.ok(Map.of(
                 "path", path,
                 "url", url,
